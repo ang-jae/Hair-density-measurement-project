@@ -2,12 +2,16 @@
 #include <stdlib.h>
 #include <math.h>
 #include <malloc.h>
+#include <iostream>
+#include <cstdlib>
+#include <cmath>
 
 #include <opencv2/opencv.hpp>   
 #include <opencv2/core/core.hpp>   
 #include <opencv2/highgui/highgui.hpp>  
 
 using namespace cv;
+using namespace std;
 
 #define PI 3.14159265359
 
@@ -460,11 +464,145 @@ void CopyImage(int**image, int height, int width, int**image_copied)
 
 // COLOR_RGB2HSV
 
-char RGB_to_HSV()
-{
 
+/*! \brief Convert RGB to HSV color space
+
+Converts a given set of RGB values `r', `g', `b' into HSV
+coordinates. The input RGB values are in the range [0, 1], and the
+output HSV values are in the ranges h = [0, 360], and s, v = [0,
+1], respectively.
+
+\param fR Red component, used as input, range: [0, 1]
+\param fG Green component, used as input, range: [0, 1]
+\param fB Blue component, used as input, range: [0, 1]
+\param fH Hue component, used as output, range: [0, 360]
+\param fS Hue component, used as output, range: [0, 1]
+\param fV Hue component, used as output, range: [0, 1]
+
+*/
+void RGB_to_HSV(float& fR, float& fG, float fB, float& fH, float& fS, float& fV) {
+	float fCMax = max(max(fR, fG), fB);
+	float fCMin = min(min(fR, fG), fB);
+	float fDelta = fCMax - fCMin;
+
+	if (fDelta > 0) {
+		if (fCMax == fR) {
+			fH = 60 * (fmod(((fG - fB) / fDelta), 6));
+		}
+		else if (fCMax == fG) {
+			fH = 60 * (((fB - fR) / fDelta) + 2);
+		}
+		else if (fCMax == fB) {
+			fH = 60 * (((fR - fG) / fDelta) + 4);
+		}
+
+		if (fCMax > 0) {
+			fS = fDelta / fCMax;
+		}
+		else {
+			fS = 0;
+		}
+
+		fV = fCMax;
+	}
+	else {
+		fH = 0;
+		fS = 0;
+		fV = fCMax;
+	}
+
+	if (fH < 0) {
+		fH = 360 + fH;
+	}
 }
 
+
+/*! \brief Convert HSV to RGB color space
+
+Converts a given set of HSV values `h', `s', `v' into RGB
+coordinates. The output RGB values are in the range [0, 1], and
+the input HSV values are in the ranges h = [0, 360], and s, v =
+[0, 1], respectively.
+
+\param fR Red component, used as output, range: [0, 1]
+\param fG Green component, used as output, range: [0, 1]
+\param fB Blue component, used as output, range: [0, 1]
+\param fH Hue component, used as input, range: [0, 360]
+\param fS Hue component, used as input, range: [0, 1]
+\param fV Hue component, used as input, range: [0, 1]
+
+*/
+
+void HSVtoRGB(float& fR, float& fG, float& fB, float& fH, float& fS, float& fV) {
+	float fC = fV * fS; // Chroma
+	float fHPrime = fmod(fH / 60.0, 6);
+	float fX = fC * (1 - fabs(fmod(fHPrime, 2) - 1));
+	float fM = fV - fC;
+
+	if (0 <= fHPrime && fHPrime < 1) {
+		fR = fC;
+		fG = fX;
+		fB = 0;
+	}
+	else if (1 <= fHPrime && fHPrime < 2) {
+		fR = fX;
+		fG = fC;
+		fB = 0;
+	}
+	else if (2 <= fHPrime && fHPrime < 3) {
+		fR = 0;
+		fG = fC;
+		fB = fX;
+	}
+	else if (3 <= fHPrime && fHPrime < 4) {
+		fR = 0;
+		fG = fX;
+		fB = fC;
+	}
+	else if (4 <= fHPrime && fHPrime < 5) {
+		fR = fX;
+		fG = 0;
+		fB = fC;
+	}
+	else if (5 <= fHPrime && fHPrime < 6) {
+		fR = fC;
+		fG = 0;
+		fB = fX;
+	}
+	else {
+		fR = 0;
+		fG = 0;
+		fB = 0;
+	}
+
+	fR += fM;
+	fG += fM;
+	fB += fM;
+}
+
+
+int main(int argc, char** argv) {
+	float fR = 0, fG = 0, fB = 0, fH = 0, fS = 0, fV = 0;
+
+	fH = 146.0;
+	fS = 0.19;
+	fV = 0.66;
+
+	HSVtoRGB(fR, fG, fB, fH, fS, fV);
+
+	/*fR = 136.0;
+	fG = 168.0;
+	fB = 150.0;
+
+	RGBtoHSV(fR, fG, fB, fH, fS, fV);*/
+
+	cout << "[RGB] "
+		<< "Float:   (" << fR << ", " << fG << ", " << fB << ")" << endl
+		<< "      Integer: (" << (255 * fR) << ", " << (255 * fG) << ", " << (255 * fB) << ")" << endl;
+	cout << "[HSV] (" << fH << ", " << fS << ", " << fV << ")" << endl;
+
+	return EXIT_SUCCESS;
+}
 void main()
 {
 
