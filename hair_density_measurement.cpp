@@ -19,6 +19,10 @@ typedef struct {
 	int r, g, b;
 }int_rgb;
 
+typedef struct {
+	int h, s, v;
+}int_hsv;
+
 
 int** IntAlloc2(int height, int width)
 {
@@ -264,35 +268,6 @@ void DownSizeN(int**image, int height, int width, int n, int**image_out)
 	}
 }
 
-int FindErr(int**image, int**block, int x, int y, int width, int height, int width_t, int height_t)
-{
-	int Err = 0;
-	for (int i = 0; i < height_t; i++)
-	{
-		for (int j = 0; j < width_t; j++)
-		{
-			if (x + j >= width || y + i >= height)continue;
-			else Err += abs(image[y + i][x + j] - block[i][j]);
-		}
-	}
-	return Err;
-}
-
-int FindErrRMS(int**image, int**block, int x, int y, int width, int height, int width_t, int height_t)
-{
-	int Err = 0;
-	for (int i = 0; i < height_t; i++)
-	{
-		for (int j = 0; j < width_t; j++)
-		{
-			if (x + j >= width || y + i >= height)continue;
-			else Err += (image[y + i][x + j] - block[i][j])*(image[y + i][x + j] - block[i][j]);
-		}
-	}
-	Err /= height_t * width_t;
-	return (sqrt(Err));
-}
-
 void GeometricTransform(int**block, int**block_changed, int height_b, int width_b, int num)
 //num 0:가만히 1:x축대칭 2:y축대칭 3:원점대칭 4:대각선대칭(/) 5:대각선대칭(반대) 6:90도 회전 7:180도 회전
 {
@@ -360,17 +335,7 @@ void GeometricTransform(int**block, int**block_changed, int height_b, int width_
 		break;
 	}
 }
-void CoverImageWithTemplate(int**image, int**block, int height, int width, int height_b, int width_b, POS2D pos)
-{
-	for (int i = 0; i < height_b; i++)
-	{
-		for (int j = 0; j < width_b; j++)
-		{
-			if ((int)pos.y + i >= height || (int)pos.x + j >= width || (int)pos.y + i < 0 || (int)pos.x + j < 0) continue;
-			else image[(int)pos.y + i][(int)pos.x + j] = block[i][j];
-		}
-	}
-}
+
 void LightenImage(int**image, int height, int width, int num)
 {
 	for (int i = 0; i < height; i++)
@@ -480,7 +445,9 @@ output HSV values are in the ranges h = [0, 360], and s, v = [0,
 \param fV Hue component, used as output, range: [0, 1]
 
 */
-void RGB_to_HSV(float& fR, float& fG, float fB, float& fH, float& fS, float& fV) {
+int_hsv RGBtoHSV(float fR, float fG, float fB) {
+	int_hsv output;
+	float fH, fS, fV;
 	float fCMax = max(max(fR, fG), fB);
 	float fCMin = min(min(fR, fG), fB);
 	float fDelta = fCMax - fCMin;
@@ -514,6 +481,10 @@ void RGB_to_HSV(float& fR, float& fG, float fB, float& fH, float& fS, float& fV)
 	if (fH < 0) {
 		fH = 360 + fH;
 	}
+	output.h = fH;
+	output.s = fS;
+	output.v = fV;
+	return output;
 }
 
 
@@ -533,7 +504,9 @@ the input HSV values are in the ranges h = [0, 360], and s, v =
 
 */
 
-void HSVtoRGB(float& fR, float& fG, float& fB, float& fH, float& fS, float& fV) {
+int_rgb HSVtoRGB(float fH, float fS, float fV) {
+	int_rgb output;
+	float fR, fG, fB;
 	float fC = fV * fS; // Chroma
 	float fHPrime = fmod(fH / 60.0, 6);
 	float fX = fC * (1 - fabs(fmod(fHPrime, 2) - 1));
@@ -578,10 +551,52 @@ void HSVtoRGB(float& fR, float& fG, float& fB, float& fH, float& fS, float& fV) 
 	fR += fM;
 	fG += fM;
 	fB += fM;
+
+	output.r = fR;
+	output.g = fG;
+	output.b = fB;
+	return output;
 }
 
+int_hsv** IntHSVAlloc2(int height, int width)
+{
+	int_hsv** tmp;
+	tmp = (int_hsv**)calloc(height, sizeof(int_hsv*));
+	for (int i = 0; i < height; i++)
+		tmp[i] = (int_hsv*)calloc(width, sizeof(int_hsv));
+	return(tmp);
+}
 
-int main(int argc, char** argv) {
+void HSVImageShow(char* winname, int_hsv** image_hsv, int height, int width)
+{
+	Mat img(height, width, CV_8UC3);
+	for (int i = 0; i < height; i++)
+		for (int j = 0; j < width; j++) {
+			img.at<Vec3b>(i, j)[0] = (unsigned char)image_hsv[i][j].h;
+			img.at<Vec3b>(i, j)[1] = (unsigned char)image_hsv[i][j].s;
+			img.at<Vec3b>(i, j)[2] = (unsigned char)image_hsv[i][j].v;
+		}
+	imshow(winname, img);
+
+}
+
+void RGBimg_to_HSVimg(int_rgb**image, int_hsv**image_hsv, int height, int width)
+{
+	float H, S, V;
+	for (int i = 0; i < height; i++)
+	{
+		for (int j = 0; j < width; j++)
+		{
+			image_hsv[i][j] = RGBtoHSV((float)image[i][j].r, (float)image[i][j].g, (float)image[i][j].b);
+		}
+	}
+}
+
+int lowerHue = 40, upperHue = 80; //green
+Mat src, src_hsv, mask, dst;
+
+/*
+int main_(int argc, char** argv) {
 	float fR = 0, fG = 0, fB = 0, fH = 0, fS = 0, fV = 0;
 
 	fH = 146.0;
@@ -590,11 +605,11 @@ int main(int argc, char** argv) {
 
 	HSVtoRGB(fR, fG, fB, fH, fS, fV);
 
-	/*fR = 136.0;
+	fR = 136.0;
 	fG = 168.0;
 	fB = 150.0;
 
-	RGBtoHSV(fR, fG, fB, fH, fS, fV);*/
+	RGBtoHSV(fR, fG, fB, fH, fS, fV);
 
 	cout << "[RGB] "
 		<< "Float:   (" << fR << ", " << fG << ", " << fB << ")" << endl
@@ -603,8 +618,51 @@ int main(int argc, char** argv) {
 
 	return EXIT_SUCCESS;
 }
-void main()
+*/
+
+
+//https://s-engineer.tistory.com/139
+void OnHueChanged(int pos, void* userdata)
 {
+	Scalar lowerb(lowerHue, 100, 0);
+	Scalar upperb(upperHue, 255, 255);
 
+	inRange(src_hsv, lowerb, upperb, mask);
 
+	dst.setTo(0);
+	src.copyTo(dst, mask);
+	imshow("mask", mask);
+	imshow("dst", dst);
+}
+
+void HueTest(int argc, char** argv)
+{
+	src = imread("hair2.jpg", IMREAD_COLOR);
+	if (src.empty()) {
+		cerr << "Image load failed." << endl;
+	}
+
+	imshow("src", src);
+
+	cvtColor(src, src_hsv, COLOR_BGR2HSV);
+
+	namedWindow("mask");
+	createTrackbar("Lower Hue", "mask", &lowerHue, 179, OnHueChanged);
+	createTrackbar("Upper Hue", "mask", &upperHue, 179, OnHueChanged);
+	OnHueChanged(NULL, NULL);
+
+	waitKey(0);
+}
+
+void main(int argc, char** argv)
+{
+	int height, width;
+	int_rgb** image = ReadColorImage((char*)"hair2.jpg", &height, &width);
+	int_hsv** image_hsv = IntHSVAlloc2(height, width);
+	
+	RGBimg_to_HSVimg(image, image_hsv, height, width);
+
+	ColorImageShow("Original", image, height, width);
+	HSVImageShow("HSV", image_hsv, height, width);
+	waitKey(0);
 }
