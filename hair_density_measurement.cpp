@@ -471,7 +471,7 @@ int_hsv RGBtoHSV(float fR, float fG, float fB) {
 		}
 
 		fV = fCMax;
-	}
+	}		
 	else {
 		fH = 0;
 		fS = 0;
@@ -481,9 +481,9 @@ int_hsv RGBtoHSV(float fR, float fG, float fB) {
 	if (fH < 0) {
 		fH = 360 + fH;
 	}
-	output.h = fH;
-	output.s = fS;
-	output.v = fV;
+	output.h = imax(imin(fH, 255), 0);
+	output.s = imax(imin(fS * 255, 255), 0);
+	output.v = imax(imin(fV * 255, 255), 0);
 	return output;
 }
 
@@ -567,6 +567,18 @@ int_hsv** IntHSVAlloc2(int height, int width)
 	return(tmp);
 }
 
+void RGBimg_to_HSVimg(int_rgb**image, int_hsv**image_hsv, int height, int width)
+{
+	float H, S, V;
+	for (int i = 0; i < height; i++)
+	{
+		for (int j = 0; j < width; j++)
+		{
+			image_hsv[i][j] = RGBtoHSV((float)image[i][j].r, (float)image[i][j].g, (float)image[i][j].b);
+		}
+	}
+}
+
 void HSVImageShow(char* winname, int_hsv** image_hsv, int height, int width)
 {
 	Mat img(height, width, CV_8UC3);
@@ -580,20 +592,43 @@ void HSVImageShow(char* winname, int_hsv** image_hsv, int height, int width)
 
 }
 
-void RGBimg_to_HSVimg(int_rgb**image, int_hsv**image_hsv, int height, int width)
+void ShowHue(char* winname, int_hsv** image_hsv, int height, int width)
 {
-	float H, S, V;
+	Mat img(height, width, CV_8UC3);
 	for (int i = 0; i < height; i++)
-	{
-		for (int j = 0; j < width; j++)
-		{
-			image_hsv[i][j] = RGBtoHSV((float)image[i][j].r, (float)image[i][j].g, (float)image[i][j].b);
+		for (int j = 0; j < width; j++) {
+			img.at<Vec3b>(i, j)[0] = (unsigned char)image_hsv[i][j].h;
+			img.at<Vec3b>(i, j)[1] = 0;
+			img.at<Vec3b>(i, j)[2] = 0;
 		}
-	}
+	imshow(winname, img);
 }
 
-int lowerHue = 40, upperHue = 80; //green
-Mat src, src_hsv, mask, dst;
+void ShowSaturation(char* winname, int_hsv** image_hsv, int height, int width)
+{
+	Mat img(height, width, CV_8UC3);
+	for (int i = 0; i < height; i++)
+		for (int j = 0; j < width; j++) {
+			img.at<Vec3b>(i, j)[0] = 0;
+			img.at<Vec3b>(i, j)[1] = (unsigned char)image_hsv[i][j].s;
+			img.at<Vec3b>(i, j)[2] = 0;
+		}
+	imshow(winname, img);
+}
+
+void ShowValue(char* winname, int_hsv** image_hsv, int height, int width)
+{
+	Mat img(height, width, CV_8UC3);
+	for (int i = 0; i < height; i++)
+		for (int j = 0; j < width; j++) {
+			img.at<Vec3b>(i, j)[0] = 0;
+			img.at<Vec3b>(i, j)[1] = 0;
+			img.at<Vec3b>(i, j)[2] = (unsigned char)image_hsv[i][j].v;
+		}
+	imshow(winname, img);
+}
+
+
 
 /*
 int main_(int argc, char** argv) {
@@ -622,6 +657,10 @@ int main_(int argc, char** argv) {
 
 
 //https://s-engineer.tistory.com/139
+
+int lowerHue = 40, upperHue = 80; //green
+Mat src, src_hsv, mask, dst;
+
 void OnHueChanged(int pos, void* userdata)
 {
 	Scalar lowerb(lowerHue, 100, 0);
@@ -657,12 +696,15 @@ void HueTest(int argc, char** argv)
 void main(int argc, char** argv)
 {
 	int height, width;
-	int_rgb** image = ReadColorImage((char*)"hair2.jpg", &height, &width);
+	int_rgb** image = ReadColorImage((char*)"hair3.jpg", &height, &width);
 	int_hsv** image_hsv = IntHSVAlloc2(height, width);
 	
 	RGBimg_to_HSVimg(image, image_hsv, height, width);
 
 	ColorImageShow("Original", image, height, width);
 	HSVImageShow("HSV", image_hsv, height, width);
+	ShowHue("Hue", image_hsv, height, width);
+	ShowSaturation("Saturation", image_hsv, height, width);
+	ShowValue("Value", image_hsv, height, width);
 	waitKey(0);
 }
