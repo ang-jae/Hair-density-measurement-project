@@ -454,13 +454,13 @@ int_hsv RGBtoHSV(float fR, float fG, float fB) {
 
 	if (fDelta > 0) {
 		if (fCMax == fR) {
-			fH = 60 * (fmod(((fG - fB) / fDelta), 6));
+			fH = 30 * (fmod(((fG - fB) / fDelta), 6));
 		}
 		else if (fCMax == fG) {
-			fH = 60 * (((fB - fR) / fDelta) + 2);
+			fH = 30 * (((fB - fR) / fDelta) + 2);
 		}
 		else if (fCMax == fB) {
-			fH = 60 * (((fR - fG) / fDelta) + 4);
+			fH = 30 * (((fR - fG) / fDelta) + 4);
 		}
 
 		if (fCMax > 0) {
@@ -479,9 +479,9 @@ int_hsv RGBtoHSV(float fR, float fG, float fB) {
 	}
 
 	if (fH < 0) {
-		fH = 360 + fH;
+		fH = 180 + fH;
 	}
-	output.h = imax(imin(fH, 255), 0);
+	output.h = imax(imin(fH, 180), 0);
 	output.s = imax(imin(fS * 255, 255), 0);
 	output.v = imax(imin(fV * 255, 255), 0);
 	return output;
@@ -628,9 +628,37 @@ void ShowValue(char* winname, int_hsv** image_hsv, int height, int width)
 	imshow(winname, img);
 }
 
+int Lowerbound_H = 0;
+int Upperbound_H = 21;
+float Lowerbound_S = 0.2;
+float Upperbound_S = 0.6;
+int Lowerbound_V = 80;
+int Upperbound_V = 255;
 
+void ShowSkin(char* winname, int_rgb** image, int_hsv** image_hsv, int height, int width)
+{
+	Mat img(height, width, CV_8UC3);
+	for (int i = 0; i < height; i++)
+		for (int j = 0; j < width; j++) {
 
-/*
+			if (image_hsv[i][j].h > Lowerbound_H && image_hsv[i][j].h <= Upperbound_H
+				&& image_hsv[i][j].s >= Lowerbound_S && image_hsv[i][j].s < Upperbound_S
+				&& image_hsv[i][j].v >= Lowerbound_V && image_hsv[i][j].v <= Upperbound_V)
+			{
+				img.at<Vec3b>(i, j)[0] = (unsigned char)image[i][j].b;
+				img.at<Vec3b>(i, j)[1] = (unsigned char)image[i][j].g;
+				img.at<Vec3b>(i, j)[2] = (unsigned char)image[i][j].r;
+			}
+			else
+			{
+				img.at<Vec3b>(i, j)[0] = 0;
+				img.at<Vec3b>(i, j)[1] = 0;
+				img.at<Vec3b>(i, j)[2] = 0;
+			}
+			
+		}
+	imshow(winname, img);
+}/*
 int main_(int argc, char** argv) {
 	float fR = 0, fG = 0, fB = 0, fH = 0, fS = 0, fV = 0;
 
@@ -674,9 +702,9 @@ void OnHueChanged(int pos, void* userdata)
 	imshow("dst", dst);
 }
 
-void HueTest(int argc, char** argv)
+void _main(int argc, char** argv)
 {
-	src = imread("hair2.jpg", IMREAD_COLOR);
+	src = imread("hair3.jpg", IMREAD_COLOR);
 	if (src.empty()) {
 		cerr << "Image load failed." << endl;
 	}
@@ -693,7 +721,7 @@ void HueTest(int argc, char** argv)
 	waitKey(0);
 }
 
-void main(int argc, char** argv)
+void main_(int argc, char** argv)
 {
 	int height, width;
 	int_rgb** image = ReadColorImage((char*)"hair3.jpg", &height, &width);
@@ -706,5 +734,17 @@ void main(int argc, char** argv)
 	ShowHue("Hue", image_hsv, height, width);
 	ShowSaturation("Saturation", image_hsv, height, width);
 	ShowValue("Value", image_hsv, height, width);
+	ShowSkin("Skin", image, image_hsv, height, width);
+	waitKey(0);
+}
+
+void main()
+{
+	Mat img_hsv, img_rgb, img_h, img_s, img_v;
+	img_rgb = imread("hair3.jpg", 1);
+	cvtColor(img_rgb, img_hsv, COLOR_BGR2HSV);
+		
+	namedWindow("win1", WINDOW_AUTOSIZE);
+	imshow("win1", img_hsv);
 	waitKey(0);
 }
