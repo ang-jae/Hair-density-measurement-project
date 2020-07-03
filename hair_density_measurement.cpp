@@ -635,19 +635,20 @@ float Upperbound_S = 0.6;
 int Lowerbound_V = 80;
 int Upperbound_V = 255;
 
-void ShowSkin(char* winname, int_rgb** image, int_hsv** image_hsv, int height, int width)
+void ShowSkin(char* winname, Mat image, Mat image_hsv, int height, int width)
 {
 	Mat img(height, width, CV_8UC3);
 	for (int i = 0; i < height; i++)
 		for (int j = 0; j < width; j++) {
 
-			if (image_hsv[i][j].h > Lowerbound_H && image_hsv[i][j].h <= Upperbound_H
-				&& image_hsv[i][j].s >= Lowerbound_S && image_hsv[i][j].s < Upperbound_S
-				&& image_hsv[i][j].v >= Lowerbound_V && image_hsv[i][j].v <= Upperbound_V)
+			if (image_hsv.at<Vec3b>(i, j)[0] > Lowerbound_H && image_hsv.at<Vec3b>(i, j)[0] <= Upperbound_H
+			//	&& image_hsv[i][j].s >= Lowerbound_S && image_hsv[i][j].s < Upperbound_S
+			//	&& image_hsv[i][j].v >= Lowerbound_V && image_hsv[i][j].v <= Upperbound_V
+				)
 			{
-				img.at<Vec3b>(i, j)[0] = (unsigned char)image[i][j].b;
-				img.at<Vec3b>(i, j)[1] = (unsigned char)image[i][j].g;
-				img.at<Vec3b>(i, j)[2] = (unsigned char)image[i][j].r;
+				img.at<Vec3b>(i, j)[0] = (unsigned char)image.at<Vec3b>(i, j)[0];
+				img.at<Vec3b>(i, j)[1] = (unsigned char)image.at<Vec3b>(i, j)[1];
+				img.at<Vec3b>(i, j)[2] = (unsigned char)image.at<Vec3b>(i, j)[2];
 			}
 			else
 			{
@@ -720,7 +721,7 @@ void _main(int argc, char** argv)
 
 	waitKey(0);
 }
-
+/*
 void main_(int argc, char** argv)
 {
 	int height, width;
@@ -737,14 +738,18 @@ void main_(int argc, char** argv)
 	ShowSkin("Skin", image, image_hsv, height, width);
 	waitKey(0);
 }
-
+*/
 void main()
 {
-	Mat img_hsv, img_rgb, img_h, img_s, img_v;
-	img_rgb = imread("hair3.jpg", 1);
+	Mat img_hsv, img_rgb;
+	img_rgb = imread("hair7.jpg", 1);
 	cvtColor(img_rgb, img_hsv, COLOR_BGR2HSV);
-		
+	vector<Mat> hsv_images(3);
+	split(img_hsv, hsv_images);
+
 	namedWindow("win1", WINDOW_AUTOSIZE);
-	imshow("win1", img_hsv);
+	imshow("win1", hsv_images[0]);
+	ShowSkin("Skin", img_rgb, hsv_images[0], img_rgb.rows, img_rgb.cols);
+
 	waitKey(0);
 }
