@@ -635,15 +635,15 @@ float Upperbound_S = 0.6;
 int Lowerbound_V = 80;
 int Upperbound_V = 255;
 
-void ShowSkin(char* winname, Mat image, Mat image_hsv, int height, int width)
+void ShowSkin(char* winname, Mat &image, Mat image_hsv, int height, int width)
 {
 	Mat img(height, width, CV_8UC3);
 	for (int i = 0; i < height; i++)
 		for (int j = 0; j < width; j++) {
 
-			if (image_hsv.at<Vec3b>(i, j)[0] > Lowerbound_H && image_hsv.at<Vec3b>(i, j)[0] <= Upperbound_H
-			//	&& image_hsv[i][j].s >= Lowerbound_S && image_hsv[i][j].s < Upperbound_S
-			//	&& image_hsv[i][j].v >= Lowerbound_V && image_hsv[i][j].v <= Upperbound_V
+			if (image_hsv.at<Vec3b>(i, j)[0] >= Lowerbound_H && image_hsv.at<Vec3b>(i, j)[0] <= Upperbound_H
+				&& image_hsv.at<Vec3b>(i, j)[1] >= Lowerbound_S && image_hsv.at<Vec3b>(i, j)[1] <= Upperbound_S
+				&& image_hsv.at<Vec3b>(i, j)[2] >= Lowerbound_V && image_hsv.at<Vec3b>(i, j)[2] <= Upperbound_V
 				)
 			{
 				img.at<Vec3b>(i, j)[0] = (unsigned char)image.at<Vec3b>(i, j)[0];
@@ -705,7 +705,7 @@ void OnHueChanged(int pos, void* userdata)
 
 void _main(int argc, char** argv)
 {
-	src = imread("hair3.jpg", IMREAD_COLOR);
+	src = imread("hair7.jpg", IMREAD_COLOR);
 	if (src.empty()) {
 		cerr << "Image load failed." << endl;
 	}
@@ -750,6 +750,22 @@ void main()
 	namedWindow("win1", WINDOW_AUTOSIZE);
 	imshow("win1", hsv_images[0]);
 	ShowSkin("Skin", img_rgb, hsv_images[0], img_rgb.rows, img_rgb.cols);
+
+	/*
+	src = imread("hair7.jpg", IMREAD_COLOR);
+	if (src.empty()) {
+		cerr << "Image load failed." << endl;
+	}
+
+	imshow("src", src);
+
+	cvtColor(src, src_hsv, COLOR_BGR2HSV);
+
+	namedWindow("mask");
+	createTrackbar("Lower Hue", "mask", &lowerHue, 179, OnHueChanged);
+	createTrackbar("Upper Hue", "mask", &upperHue, 179, OnHueChanged);
+	OnHueChanged(NULL, NULL);
+	*/
 
 	waitKey(0);
 }
