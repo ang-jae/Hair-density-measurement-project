@@ -635,20 +635,25 @@ float Upperbound_S = 0.6;
 int Lowerbound_V = 80;
 int Upperbound_V = 255;
 
-void ShowSkin(char* winname, Mat &image, Mat image_hsv, int height, int width)
+Mat ExtractSkin(char* winname, Mat image, Mat *image_hsv ,int height, int width)
 {
 	Mat img(height, width, CV_8UC3);
-	for (int i = 0; i < height; i++)
-		for (int j = 0; j < width; j++) {
+	if (image_hsv[0].empty() || image_hsv[1].empty() || image_hsv[2].empty())
+	{
+		printf("\nWrong input!");
+		return img;
+	}
+	for (int i = 0 ; i < height; i++)
+		for (int j = 0 ; j < width ; j++) {
 
-			if (image_hsv.at<Vec3b>(i, j)[0] >= Lowerbound_H && image_hsv.at<Vec3b>(i, j)[0] <= Upperbound_H
-				&& image_hsv.at<Vec3b>(i, j)[1] >= Lowerbound_S && image_hsv.at<Vec3b>(i, j)[1] <= Upperbound_S
-				&& image_hsv.at<Vec3b>(i, j)[2] >= Lowerbound_V && image_hsv.at<Vec3b>(i, j)[2] <= Upperbound_V
+			if (image_hsv[0].at<Vec3b>(i, j)[0] >= Lowerbound_H && image_hsv[0].at<Vec3b>(i, j)[0] <= Upperbound_H
+				&& image_hsv[1].at<Vec3b>(i, j)[1] >= Lowerbound_S && image_hsv[1].at<Vec3b>(i, j)[1] <= Upperbound_S
+				&& image_hsv[2].at<Vec3b>(i, j)[2] >= Lowerbound_V && image_hsv[2].at<Vec3b>(i, j)[2] <= Upperbound_V
 				)
 			{
-				img.at<Vec3b>(i, j)[0] = (unsigned char)image.at<Vec3b>(i, j)[0];
-				img.at<Vec3b>(i, j)[1] = (unsigned char)image.at<Vec3b>(i, j)[1];
-				img.at<Vec3b>(i, j)[2] = (unsigned char)image.at<Vec3b>(i, j)[2];
+				img.at<Vec3b>(i, j)[0] = image.at<Vec3b>(i, j)[0];
+				img.at<Vec3b>(i, j)[1] = image.at<Vec3b>(i, j)[1];
+				img.at<Vec3b>(i, j)[2] = image.at<Vec3b>(i, j)[2];
 			}
 			else
 			{
@@ -658,7 +663,7 @@ void ShowSkin(char* winname, Mat &image, Mat image_hsv, int height, int width)
 			}
 			
 		}
-	imshow(winname, img);
+	return img;
 }/*
 int main_(int argc, char** argv) {
 	float fR = 0, fG = 0, fB = 0, fH = 0, fS = 0, fV = 0;
@@ -744,12 +749,13 @@ void main()
 	Mat img_hsv, img_rgb;
 	img_rgb = imread("hair7.jpg", 1);
 	cvtColor(img_rgb, img_hsv, COLOR_BGR2HSV);
-	vector<Mat> hsv_images(3);
+	Mat hsv_images[3];
+	Mat img_skin;
 	split(img_hsv, hsv_images);
 
 	namedWindow("win1", WINDOW_AUTOSIZE);
 	imshow("win1", hsv_images[0]);
-	ShowSkin("Skin", img_rgb, hsv_images[0], img_rgb.rows, img_rgb.cols);
+	img_skin = ExtractSkin("Skin", img_rgb, hsv_images, img_rgb.rows, img_rgb.cols);
 
 	/*
 	src = imread("hair7.jpg", IMREAD_COLOR);
