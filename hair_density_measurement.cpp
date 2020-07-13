@@ -799,6 +799,7 @@ float DensityMeasurement(Mat &image, int height, int width)
 void main() // YCbCr로 변경
 {
 	Mat img_rgb, img_YCrCb, img_skin;
+	//황색은 Cb : 77 ~ 127, Cr : 133 ~ 173. 조금씩 조정
 	int upperb_Cr = 173;
 	int lowerb_Cr = 133;
 	int upperb_Cb = 130;
