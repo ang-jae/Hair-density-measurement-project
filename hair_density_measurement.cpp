@@ -8,7 +8,8 @@
 
 #include <opencv2/opencv.hpp>   
 #include <opencv2/core/core.hpp>   
-#include <opencv2/highgui/highgui.hpp>  
+#include <opencv2/highgui/highgui.hpp> 
+#include <opencv2/core.hpp>
 
 using namespace cv;
 using namespace std;
@@ -635,20 +636,19 @@ float Upperbound_S = 0.6;
 int Lowerbound_V = 80;
 int Upperbound_V = 255;
 
-Mat ExtractSkin(char* winname, Mat image, Mat *image_hsv ,int height, int width)
+Mat ExtractSkin(char* winname, Mat &image, Mat &image_h, Mat &image_s, Mat &image_v ,int height, int width)
 {
 	Mat img(height, width, CV_8UC3);
-	if (image_hsv[0].empty() || image_hsv[1].empty() || image_hsv[2].empty())
+	if (image_h.empty() || image_s.empty() || image_v.empty())
 	{
 		printf("\nWrong input!");
 		return img;
 	}
 	for (int i = 0 ; i < height; i++)
 		for (int j = 0 ; j < width ; j++) {
-
-			if (image_hsv[0].at<Vec3b>(i, j)[0] >= Lowerbound_H && image_hsv[0].at<Vec3b>(i, j)[0] <= Upperbound_H
-				&& image_hsv[1].at<Vec3b>(i, j)[1] >= Lowerbound_S && image_hsv[1].at<Vec3b>(i, j)[1] <= Upperbound_S
-				&& image_hsv[2].at<Vec3b>(i, j)[2] >= Lowerbound_V && image_hsv[2].at<Vec3b>(i, j)[2] <= Upperbound_V
+			if (image_h.at<Vec3b>(i, j)[0] >= Lowerbound_H && image_h.at<Vec3b>(i, j)[0] <= Upperbound_H
+				&& image_s.at<Vec3b>(i, j)[1] >= Lowerbound_S && image_s.at<Vec3b>(i, j)[1] <= Upperbound_S
+				&& image_v.at<Vec3b>(i, j)[2] >= Lowerbound_V && image_v.at<Vec3b>(i, j)[2] <= Upperbound_V
 				)
 			{
 				img.at<Vec3b>(i, j)[0] = image.at<Vec3b>(i, j)[0];
@@ -664,7 +664,9 @@ Mat ExtractSkin(char* winname, Mat image, Mat *image_hsv ,int height, int width)
 			
 		}
 	return img;
-}/*
+}
+
+/*
 int main_(int argc, char** argv) {
 	float fR = 0, fG = 0, fB = 0, fH = 0, fS = 0, fV = 0;
 
@@ -744,7 +746,7 @@ void main_(int argc, char** argv)
 	waitKey(0);
 }
 */
-void main()
+void main_0713()
 {
 	Mat img_hsv, img_rgb;
 	img_rgb = imread("hair7.jpg", 1);
@@ -754,8 +756,10 @@ void main()
 	split(img_hsv, hsv_images);
 
 	namedWindow("win1", WINDOW_AUTOSIZE);
-	imshow("win1", hsv_images[0]);
-	img_skin = ExtractSkin("Skin", img_rgb, hsv_images, img_rgb.rows, img_rgb.cols);
+	imshow("h", hsv_images[0]);
+	imshow("s", hsv_images[1]);
+	imshow("v", hsv_images[2]);
+//	img_skin = ExtractSkin("Skin", img_rgb, hsv_images[0], hsv_images[1], hsv_images[2], img_rgb.rows, img_rgb.cols);
 
 	/*
 	src = imread("hair7.jpg", IMREAD_COLOR);
@@ -775,3 +779,46 @@ void main()
 
 	waitKey(0);
 }
+
+float DensityMeasurement(Mat image)
+{
+	float density;
+	int count = 0; // hair 점 개수
+
+	for(int i = 0; i < image.row; i++)
+		for (int j = 0; j < image.col; j++)
+		{
+			if (image.at<Vec3b>(i, j)[0] == 0 && image.at<Vec3b>(i, j)[1] == 0 && image.at<Vec3b>(i, j)[2] == 0) count++;
+		}
+	//머리카락 밀도 = hair 점 개수 / row*col
+	density = count / (image.row * image.col);
+
+	return density;
+}
+
+void main() // YCbCr로 변경
+{
+	Mat img_rgb, img_YCrCb, img_skin;
+	int upperb_Cr = 173;
+	int lowerb_Cr = 133;
+	int upperb_Cb = 130;
+	int lowerb_Cb = 70;
+
+
+	img_rgb = imread("hair7.jpg", 1);
+	cvtColor(img_rgb, img_YCrCb, COLOR_BGR2YCrCb);
+	inRange(img_YCrCb, Scalar(0, lowerb_Cr, lowerb_Cb), Scalar(255, upperb_Cr, upperb_Cb), img_YCrCb);
+
+	img_skin = (img_YCrCb.size(), CV_8UC3, Scalar(0));
+	add(img_rgb, Scalar(0), img_skin, img_YCrCb);
+
+	imshow("Original", img_rgb);
+	imshow("Changed Image", img_YCrCb);
+	imshow("Skin", img_skin);
+
+	float density = DensityMeasurement(img_YCrCb);
+	printf("\nDensity is : %f", density);
+
+	waitKey(0);
+}
+
