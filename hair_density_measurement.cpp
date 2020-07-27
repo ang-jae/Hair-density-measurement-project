@@ -780,18 +780,32 @@ void main_0713()
 	waitKey(0);
 }
 
-float DensityMeasurement(Mat &image, int height, int width)
+float DensityMeasurement(Mat &image)
 {
 	float density;
 	int count = 0; // hair 점 개수
-
-	for(int i = 0; i < height ; i++)
-		for (int j = 0; j < width ; j++)
+	Vec3b* data = (Vec3b*)image.data;
+	
+	/*
+	for(int i = 0; i < image.rows ; i++)
+		for (int j = 0; j < image.cols ; j++)
 		{
-			if (image.at<Vec3b>(i, j) == Vec3b(0, 0, 0)) count++; // 여기서 오류발생
+		//	if(image.at<Vec3b>(i, j) == Vec3b(0, 0, 0)) count++; // at접근 -> mat.inl.hpp에서 오류 발생
+		//	if(data[i * width + j] == Vec3b(0, 0, 0)) count++;// data 접근 -> matx.hpp에서 오류 발생
 		}
+	*/
+	// ptr접근 -> mat.inl.hpp 에서 오류 발생
+	for (int x = 0; x < image.rows; x++)
+	{
+		Vec3b* ptrA = image.ptr<Vec3b>(x);
+		for (int y = 0; y < image.cols; y++)
+			if (ptrA[y] == Vec3b(0, 0, 0))
+				count++;
+	}
+	
+
 	//머리카락 밀도 = hair 점 개수 / row*col
-	density = count / (height*width);
+	density = (float)count / ((float)image.rows*(float)image.cols);
 
 	return density;
 }
@@ -817,7 +831,7 @@ void main() // YCbCr로 변경
 	imshow("Changed Image", img_YCrCb);
 	imshow("Skin", img_skin);
 
-	float density = DensityMeasurement(img_YCrCb, img_YCrCb.rows, img_YCrCb.cols);
+	float density = DensityMeasurement(img_YCrCb);
 	printf("\nDensity is : %f", density);
 
 	waitKey(0);
