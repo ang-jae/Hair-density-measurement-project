@@ -788,7 +788,7 @@ float DensityMeasurement(Mat &image, int height, int width)
 	for(int i = 0; i < height ; i++)
 		for (int j = 0; j < width ; j++)
 		{
-			if (image.at<Vec3b>(i, j)[0] == 0 && image.at<Vec3b>(i, j)[1] == 0 && image.at<Vec3b>(i, j)[2] == 0) count++; // 여기서 버그발생
+			if (image.at<Vec3b>(i, j) == Vec3b(0, 0, 0)) count++; // 여기서 오류발생
 		}
 	//머리카락 밀도 = hair 점 개수 / row*col
 	density = count / (height*width);
