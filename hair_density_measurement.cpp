@@ -786,15 +786,14 @@ float DensityMeasurement(Mat &image)
 	int count = 0; // hair 점 개수
 	Vec3b* data = (Vec3b*)image.data;
 	
-	/*
+	
 	for(int i = 0; i < image.rows ; i++)
 		for (int j = 0; j < image.cols ; j++)
 		{
-		//	if(image.at<Vec3b>(i, j) == Vec3b(0, 0, 0)) count++; // at접근 -> mat.inl.hpp에서 오류 발생
+			if(image.at<unsigned char>(i, j) == Vec3b(0, 0, 0)) count++; // at접근 -> mat.inl.hpp에서 오류 발생
 		//	if(data[i * width + j] == Vec3b(0, 0, 0)) count++;// data 접근 -> matx.hpp에서 오류 발생
 		}
-	*/
-	// ptr접근 -> mat.inl.hpp 에서 오류 발생
+	
 	for (int x = 0; x < image.rows; x++)
 	{
 		Vec3b* ptrA = image.ptr<Vec3b>(x);
@@ -822,16 +821,17 @@ void main() // YCbCr로 변경
 
 	img_rgb = imread("hair7.jpg", 1);
 	cvtColor(img_rgb, img_YCrCb, COLOR_BGR2YCrCb);
-	inRange(img_YCrCb, Scalar(0, lowerb_Cr, lowerb_Cb), Scalar(255, upperb_Cr, upperb_Cb), img_YCrCb);
+	Mat img_mask;
+	inRange(img_YCrCb, Scalar(0, lowerb_Cr, lowerb_Cb), Scalar(255, upperb_Cr, upperb_Cb), img_mask);
 
 	img_skin = (img_YCrCb.size(), CV_8UC3, Scalar(0));
-	add(img_rgb, Scalar(0), img_skin, img_YCrCb);
+	//add(img_rgb, Scalar(0), img_skin, img_YCrCb);
 
 	imshow("Original", img_rgb);
 	imshow("Changed Image", img_YCrCb);
 	imshow("Skin", img_skin);
 
-	float density = DensityMeasurement(img_YCrCb);
+	float density = DensityMeasurement(img_mask);
 	printf("\nDensity is : %f", density);
 
 	waitKey(0);
