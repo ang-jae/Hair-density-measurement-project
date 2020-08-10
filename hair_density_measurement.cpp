@@ -5,6 +5,9 @@
 #include <iostream>
 #include <cstdlib>
 #include <cmath>
+#include "HOG.hpp"
+#include "HOG.cpp"
+#include "main.cpp"
 
 #include <opencv2/opencv.hpp>   
 #include <opencv2/core/core.hpp>   
@@ -810,14 +813,14 @@ float DensityMeasurement(Mat &image)
 }
 
 
-void main() // YCbCr로 변경
+void main_YCrCb() // YCbCr로 변경
 {
-	Mat img_rgb, img_YCrCb, img_hair;
+	Mat img_rgb, img_YCrCb, img_skin, img_skin_erode;
 	//황색은 Cb : 77 ~ 127, Cr : 133 ~ 173. 조금씩 조정
 	int upperb_Cr = 173;
-	int lowerb_Cr = 133;
-	int upperb_Cb = 130;
-	int lowerb_Cb = 70;
+	int lowerb_Cr = 123;
+	int upperb_Cb = 127;
+	int lowerb_Cb = 77;
 
 
 	img_rgb = imread("hair7.jpg", 1);
@@ -825,19 +828,57 @@ void main() // YCbCr로 변경
 	Mat img_mask;
 	inRange(img_YCrCb, Scalar(0, lowerb_Cr, lowerb_Cb), Scalar(255, upperb_Cr, upperb_Cb), img_mask);
 
-	img_hair = (img_YCrCb.size(), CV_8UC3, Scalar(0));
-	add(img_rgb, Scalar(0), img_hair,img_mask);
+	img_skin = (img_YCrCb.size(), CV_8UC3, Scalar(0));
+	add(img_rgb, Scalar(0), img_skin,img_mask);
 
 	imshow("Original", img_rgb);
 	imshow("Changed Image", img_YCrCb);
 	imshow("Mask", img_mask);
-	imshow("Hair", img_hair);
+	imshow("Skin", img_skin);
 
-	float density = DensityMeasurement(img_hair);
+	erode(img_skin, img_skin_erode);
+
+	float density = DensityMeasurement(img_skin);
 	printf("\nDensity is : %f", density);
 
-	//erode() -> 침식 연산
 
 	waitKey(0);
 }
 
+int main(int argc, char* argv[]) {
+	// Open an image
+	Mat image = imread(argv[1], CV_8U);
+	
+	// Set up the HOG object
+	size_t cellsize = 8;
+	size_t blocksize = cellsize * 2;
+	size_t stride = cellsize;
+	size_t binning = 9;
+	HOG hog(blocksize, cellsize, stride, binning, HOG::GRADIENT_UNSIGNED, HOG::L2hys);
+	
+	// example how to save and load a HOG model
+	hog.save("hog.ext");
+	hog = HOG::load("hog.ext");
+	
+	// Process the whole image
+	hog.process(image);
+	
+	// Retrieve HOG from a ROI/window/sub-image
+	Size window(50, 100);
+
+#pragma omp parallel num_threads(8)
+	{
+#pragma omp for collapse(2)
+		for (int x = 0; x<image.cols - window.width; x += cellsize) {
+			for (int y = 0; y<image.rows - window.height; y += cellsize) {
+				cv::Rect roi = cv::Rect(x, y, window.width, window.height);
+				auto hist = hog.retrieve(roi);
+				// Print resulting histograms
+				std::cout << "Histogram size: " << hist.size() << "\n";
+				for (auto h : hist)
+					std::cout << h << ",";
+				std::cout << "\n";
+			}
+		}
+	}
+}
