@@ -5,9 +5,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <cmath>
-#include "HOG.hpp"
 #include "HOG.cpp"
-#include "main.cpp"
 
 #include <opencv2/opencv.hpp>   
 #include <opencv2/core/core.hpp>   
@@ -836,7 +834,7 @@ void main_YCrCb() // YCbCr로 변경
 	imshow("Mask", img_mask);
 	imshow("Skin", img_skin);
 
-	erode(img_skin, img_skin_erode);
+//	erode(img_skin, img_skin_erode);
 
 	float density = DensityMeasurement(img_skin);
 	printf("\nDensity is : %f", density);
@@ -845,16 +843,17 @@ void main_YCrCb() // YCbCr로 변경
 	waitKey(0);
 }
 
-int main(int argc, char* argv[]) {
+void main() {
 	// Open an image
-	Mat image = imread(argv[1], CV_8U);
+	Mat image = imread("hair7.jpg", CV_8U);
+	imshow("original", image);
 	
 	// Set up the HOG object
-	size_t cellsize = 8;
+	size_t cellsize = 5;
 	size_t blocksize = cellsize * 2;
 	size_t stride = cellsize;
 	size_t binning = 9;
-	HOG hog(blocksize, cellsize, stride, binning, HOG::GRADIENT_UNSIGNED, HOG::L2hys);
+	HOG hog(blocksize, cellsize, stride, binning, HOG::GRADIENT_UNSIGNED);
 	
 	// example how to save and load a HOG model
 	hog.save("hog.ext");
@@ -867,18 +866,19 @@ int main(int argc, char* argv[]) {
 	Size window(50, 100);
 
 #pragma omp parallel num_threads(8)
-	{
-#pragma omp for collapse(2)
-		for (int x = 0; x<image.cols - window.width; x += cellsize) {
-			for (int y = 0; y<image.rows - window.height; y += cellsize) {
-				cv::Rect roi = cv::Rect(x, y, window.width, window.height);
-				auto hist = hog.retrieve(roi);
-				// Print resulting histograms
-				std::cout << "Histogram size: " << hist.size() << "\n";
-				for (auto h : hist)
-					std::cout << h << ",";
-				std::cout << "\n";
+{
+	#pragma omp for collapse(2)
+	for (int x = 0; x<image.cols - window.width; x += cellsize) {
+		for (int y = 0; y<image.rows - window.height; y += cellsize) {
+			cv::Rect roi = cv::Rect(x, y, window.width, window.height);
+			auto hist = hog.retrieve(roi);
+			// Print resulting histograms
+			std::cout << "Histogram size: " << hist.size() << "\n";
+			for (auto h : hist)
+				std::cout << h << ",";
+			std::cout << "\n";
 			}
 		}
 	}
+
 }
