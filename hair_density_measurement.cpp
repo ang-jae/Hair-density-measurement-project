@@ -877,8 +877,8 @@ void main() {
 			for (auto h : hist)
 				std::cout << h << ",";
 			std::cout << "\n";
-			}
 		}
 	}
+}
 
 }
