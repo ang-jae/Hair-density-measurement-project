@@ -5,7 +5,6 @@
 #include <iostream>
 #include <cstdlib>
 #include <cmath>
-#include "HOG.cpp"
 
 #include <opencv2/opencv.hpp>   
 #include <opencv2/core/core.hpp>   
@@ -781,6 +780,7 @@ void main_0713()
 	waitKey(0);
 }
 
+
 float DensityMeasurement(Mat &image)
 {
 	float density;
@@ -810,7 +810,7 @@ float DensityMeasurement(Mat &image)
 	return density;
 }
 
-
+/*
 void main_YCrCb() // YCbCr로 변경
 {
 	Mat img_rgb, img_YCrCb, img_skin, img_skin_erode;
@@ -836,13 +836,16 @@ void main_YCrCb() // YCbCr로 변경
 
 //	erode(img_skin, img_skin_erode);
 
-	float density = DensityMeasurement(img_skin);
-	printf("\nDensity is : %f", density);
+//	float density = DensityMeasurement(img_skin);
+//	printf("\nDensity is : %f", density);
 
 
 	waitKey(0);
 }
+*/
 
+
+/*
 void main() {
 	// Open an image
 	Mat image = imread("hair7.jpg", CV_8U);
@@ -880,5 +883,48 @@ void main() {
 		}
 	}
 }
+
+}
+*/
+
+void main()
+{
+	Mat grayImg = imread("hair7.jpg", 0);
+	HOGDescriptor hog;
+	vector<float> ders;
+	vector<Point> locs;
+
+	//imshow("Gray", grayImg);
+	
+	hog.compute(grayImg, ders, Size(32, 32), Size(0, 0), locs);
+
+	Mat Hogfeat(ders.size(), 1, CV_32FC1);
+
+	for (int i = 0; i < ders.size(); i++)	
+		Hogfeat.at<float>(i, 0) = ders.at(i);
+
+	imshow("HOG", Hogfeat);
+
+	hog.blockSize = Size(16, 16);
+	hog.cellSize = Size(4, 4);
+	hog.blockStride = Size(8, 8);
+
+	// This is for comparing the HOG features of two images without using any SVM 
+	// (It is not an efficient way but useful when you want to compare only few or two images)
+	// Simple distance
+	// Consider you have two HOG feature vectors for two images Hogfeat1 and Hogfeat2 and those are same size.
+
+	double distance = 0;
+	int Threshold = 100;
+
+	for (int i = 0; i < Hogfeat.rows; i++)
+		distance += abs(Hogfeat.at<float>(i, 0) - Hogfeat.at<float>(i, 0));
+		
+	if (distance < Threshold)
+		cout << "Two images are of same class" << endl;
+	else
+		cout << "Two images are of different class" << endl;
+
+	waitKey(0);
 
 }
