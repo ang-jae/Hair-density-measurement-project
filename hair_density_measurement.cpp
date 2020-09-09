@@ -729,7 +729,7 @@ void _main(int argc, char** argv)
 	waitKey(0);
 }
 /*
-void main_(int argc, char** argv)
+void main(int argc, char** argv)
 {
 	int height, width;
 	int_rgb** image = ReadColorImage((char*)"hair3.jpg", &height, &width);
@@ -746,7 +746,7 @@ void main_(int argc, char** argv)
 	waitKey(0);
 }
 */
-void main_0713()
+void main_hsv()
 {
 	Mat img_hsv, img_rgb;
 	img_rgb = imread("hair7.jpg", 1);
@@ -761,6 +761,7 @@ void main_0713()
 	imshow("v", hsv_images[2]);
 //	img_skin = ExtractSkin("Skin", img_rgb, hsv_images[0], hsv_images[1], hsv_images[2], img_rgb.rows, img_rgb.cols);
 
+	imshow("skin", img_skin);
 	/*
 	src = imread("hair7.jpg", IMREAD_COLOR);
 	if (src.empty()) {
@@ -792,7 +793,6 @@ float DensityMeasurement(Mat &image)
 		for (int j = 0; j < image.cols ; j++)
 		{
 			if(image.at<uchar>(i, j) == 0) count++;
-		//	if(data[i * width + j] == Vec3b(0, 0, 0)) count++;// data 접근 -> matx.hpp에서 오류 발생
 		}
 	/*
 	for (int x = 0; x < image.rows; x++)
@@ -803,25 +803,23 @@ float DensityMeasurement(Mat &image)
 				count++;
 	}
 	*/
-
 	//머리카락 밀도 = hair 점 개수 / (row*col)
 	density = (float)count / ((float)image.rows*(float)image.cols);
 
 	return density;
 }
 
-/*
-void main_YCrCb() // YCbCr로 변경
+
+void main_YCbCr() // YCbCr로 변경
 {
-	Mat img_rgb, img_YCrCb, img_skin, img_skin_erode;
+	Mat img_rgb, img_YCrCb, img_skin;
 	//황색은 Cb : 77 ~ 127, Cr : 133 ~ 173. 조금씩 조정
 	int upperb_Cr = 173;
 	int lowerb_Cr = 123;
 	int upperb_Cb = 127;
 	int lowerb_Cb = 77;
 
-
-	img_rgb = imread("hair7.jpg", 1);
+	img_rgb = imread("hair9.jpg", 1);
 	cvtColor(img_rgb, img_YCrCb, COLOR_BGR2YCrCb);
 	Mat img_mask;
 	inRange(img_YCrCb, Scalar(0, lowerb_Cr, lowerb_Cb), Scalar(255, upperb_Cr, upperb_Cb), img_mask);
@@ -834,15 +832,12 @@ void main_YCrCb() // YCbCr로 변경
 	imshow("Mask", img_mask);
 	imshow("Skin", img_skin);
 
-//	erode(img_skin, img_skin_erode);
-
-//	float density = DensityMeasurement(img_skin);
-//	printf("\nDensity is : %f", density);
-
+	float density = DensityMeasurement(img_skin);
+	printf("\nDensity is : %f", density);
 
 	waitKey(0);
 }
-*/
+
 
 
 /*
@@ -887,21 +882,62 @@ void main() {
 }
 */
 
-void main()
+
+//Edge 계산 -> Gradient 구함
+void CalculateCannyEdge(Mat& image)
 {
+	int lowThreshold = 50;
+	int highThreshold = 150;
+
+	Mat img_gray;
+	Mat dst, detected_edges;
+	if (image.empty())
+	{
+		cout << "파일을 열 수 없습니다" << endl;
+	}
+	cvtColor(image, img_gray, COLOR_BGR2GRAY);
+	blur(img_gray, detected_edges, Size(3, 3));
+	Canny(detected_edges, detected_edges, lowThreshold, highThreshold, 3);
+
+	namedWindow("Canny Edge", WINDOW_AUTOSIZE);
+	imshow("Canny Edge", detected_edges);
+}
+
+/*
+Mat GetGradient()
+{
+
+
+}
+*/
+
+
+void main_HOG()
+{
+	//모근 부분을 src로 이미지를 만들어서 사용
+	//모근이 가장 잘 나온 hair3.jpg의 64*128 사이즈의 src 생성
+	Mat src = imread("src.jpg", 0);
 	Mat grayImg = imread("hair7.jpg", 0);
+	
 	HOGDescriptor hog;
+	
 	vector<float> ders;
 	vector<Point> locs;
+
+	resize(grayImg, grayImg, Size(64, 128));
 
 	//imshow("Gray", grayImg);
 	
 	hog.compute(grayImg, ders, Size(32, 32), Size(0, 0), locs);
 
 	Mat Hogfeat(ders.size(), 1, CV_32FC1);
+	Mat Hogfeat_src(ders.size(), 1, CV_32FC1);
 
-	for (int i = 0; i < ders.size(); i++)	
+	for (int i = 0; i < ders.size(); i++)
+	{
 		Hogfeat.at<float>(i, 0) = ders.at(i);
+		Hogfeat_src.at<float>(i, 0) = ders.at(i);
+	}
 
 	imshow("HOG", Hogfeat);
 
@@ -918,7 +954,7 @@ void main()
 	int Threshold = 100;
 
 	for (int i = 0; i < Hogfeat.rows; i++)
-		distance += abs(Hogfeat.at<float>(i, 0) - Hogfeat.at<float>(i, 0));
+		distance += abs(Hogfeat.at<float>(i, 0) - Hogfeat_src.at<float>(i, 0));
 		
 	if (distance < Threshold)
 		cout << "Two images are of same class" << endl;
@@ -927,4 +963,12 @@ void main()
 
 	waitKey(0);
 
+}
+
+void main()
+{
+	Mat image = imread("src.jpg", 0);
+	CalculateCannyEdge(image);
+
+	waitKey(0);
 }
