@@ -884,16 +884,17 @@ void main() {
 
 
 //Edge 계산 -> Gradient 구함
-void CalculateCannyEdge(Mat& image)
+Mat CalculateCannyEdge(Mat& image)
 {
 	int lowThreshold = 50;
 	int highThreshold = 150;
 
 	Mat img_gray;
 	Mat dst, detected_edges;
+
 	if (image.empty())
 	{
-		cout << "파일을 열 수 없습니다" << endl;
+		cout << "파일을 열 수 없습니다." << endl;
 	}
 	cvtColor(image, img_gray, COLOR_BGR2GRAY);
 	blur(img_gray, detected_edges, Size(3, 3));
@@ -901,6 +902,8 @@ void CalculateCannyEdge(Mat& image)
 
 	namedWindow("Canny Edge", WINDOW_AUTOSIZE);
 	imshow("Canny Edge", detected_edges);
+
+	return detected_edges;
 }
 
 /*
@@ -965,10 +968,41 @@ void main_HOG()
 
 }
 
-void main()
+void main_0909()
 {
 	Mat image = imread("src.jpg", 0);
-	CalculateCannyEdge(image);
+	Mat edge = CalculateCannyEdge(image);
 
 	waitKey(0);
+}
+
+
+
+
+int main(int argc, char** argv)
+{
+	Mat src_gray;
+	Mat dst, detected_edges;
+
+	int lowThreshold = 50;
+	int highThreshold = 150;
+
+	Mat src = imread("src.jpg", IMREAD_COLOR); // Load an image
+	if (src.empty())
+	{
+		std::cout << "Could not open or find the image!\n" << std::endl;
+		std::cout << "Usage: " << argv[0] << " <Input image>" << std::endl;
+		return -1;
+	}
+
+	cvtColor(src, src_gray, COLOR_BGR2GRAY);
+	blur(src_gray, detected_edges, Size(3, 3));
+	Canny(detected_edges, detected_edges, lowThreshold, highThreshold, 3);
+
+	namedWindow("Canny Edge", WINDOW_AUTOSIZE);
+	imshow("Canny Edge", detected_edges);
+
+
+	waitKey(0);
+	return 0;
 }
